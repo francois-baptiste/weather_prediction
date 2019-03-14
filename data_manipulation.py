@@ -65,7 +65,7 @@ def fn_h5_append(h5f_name, name_in, data_in):
 # We can now convert all the files to HDF5 now by using the functions writen above.
 
 ########## converting testA to HDF5 using the functions given above
-step_size = 2000
+step_size = 500
 path_in = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/testA.txt'
 h5f_name = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/data_testA.h5'
 h5f = h5py.File(h5f_name, 'w')
@@ -87,8 +87,8 @@ for i in np.arange(0, 2000, step_size):
     del np_train_id, np_train_label, np_train_data
 
 ########## converting testB to HDF5
-path_in = '/home/ubuntu/data_new/CIKM2017_testB/testB.txt'
-h5f_name = '/home/ubuntu/data_new/CIKM2017_testB/data_testB.h5'
+path_in = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/testB.txt'
+h5f_name = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/data_testB.h5'
 h5f = h5py.File(h5f_name, 'w')
 grp = h5f.create_group('test_B')
 h5f.close()
@@ -108,9 +108,9 @@ for i in np.arange(0, 2000, step_size):
     del np_train_id, np_train_label, np_train_data
 
 ########## converting train set to HDF5 using only 4,000 samples instead of the total 10,000
-step_size = 4000
-path_in = '/home/ubuntu/data_new/CIKM2017_train/train.txt'
-h5f_name = '/home/ubuntu/data_new/CIKM2017_train/train.h5'
+step_size = 500
+path_in = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/train.txt'
+h5f_name = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/train.h5'
 h5f = h5py.File(h5f_name, 'w')
 grp = h5f.create_group('train')
 h5f.close()
@@ -133,8 +133,8 @@ for i in np.arange(0, 4000, step_size):
 #### using a portion of data that does not overlap with the reduced test set. taking 500 sequencial samples
 #### as the validation set.
 
-path_in = '/home/ubuntu/data_new/CIKM2017_train/train.txt'
-h5f_name = '/home/ubuntu/data_new/CIKM2017_train/val.h5'
+path_in = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/train.txt'
+h5f_name = '/047efbea-741c-4d9b-90a7-128e39c9b91e1/data_new/val.h5'
 h5f = h5py.File(h5f_name, 'w')
 grp = h5f.create_group('val')
 h5f.close()

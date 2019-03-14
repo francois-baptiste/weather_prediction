@@ -6,6 +6,7 @@
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.ndimage import filters
 
 
 #### Data loader function - use to select which HDF5 file to read and load
@@ -48,7 +49,7 @@ y_std = 15.
 y_mean = 15.
 X_std = 50.
 X_mean = 60.
-
+my_height = 3
 
 # normalise input and output
 def fn_norm_Xy(X, y, is_graph=False):
@@ -115,10 +116,20 @@ def fn_h5_to_Xy_2D_timeD(test_train, i=0, h_select=3):
 
 #### loading the keras libraries
 from keras.layers import Dense, MaxPooling2D, Dropout, BatchNormalization, Flatten, Conv2D
-
+from keras import backend as K
 from keras.models import Sequential
 from keras.layers.convolutional_recurrent import ConvLSTM2D
 
+def fn_keras_rmse(y_true, y_pred):
+    return K.sqrt(K.mean(K.square((y_pred*y_std) - (y_true*y_std))))
+
+def fn_run_model(model, X, y, X_val, y_val, batch_size=50, nb_epoch=40,verbose=2,is_graph=False):
+    history = model.fit(X, y, batch_size=batch_size,
+                        epochs=nb_epoch,verbose=verbose, validation_data=(X_val, y_val))
+    if is_graph:
+        fig, ax1 = plt.subplots(1,1)
+        ax1.plot(history.history["val_loss"])
+        ax1.plot(history.history["loss"])
 
 #  convLSTM model to predict the LSTM network
 def fn_get_model_convLSTM_2():
@@ -289,8 +300,7 @@ def fn_Xy_to_tframe(X_in):
     for sample in range(0, X_in.shape[0]):
 
         X0[sample] = X_in[sample, 0:n_frames, :, :, :]
-        X1[sample] = X_in[sample, n_frames:n_frame
-        s + n_frames_out,:,:,:]
+        X1[sample] = X_in[sample, n_frames:n_frames + n_frames_out,:,:,:]
 
         # blur inputs
         for i in range(n_frames):
@@ -301,10 +311,8 @@ def fn_Xy_to_tframe(X_in):
     X_max = 3.0
     X0 = np.clip(X0, 0, X_max)  # clip
     X1 = np.clip(X1, 0, X_max)
-    X0 = X
-    0 / X_max
-    X1 = X
-    1 / X_max
+    X0 = X0 / X_max
+    X1 = X1 / X_max
 
     return X0, X1
 
@@ -332,12 +340,9 @@ def fn_Xy_to_tframe_v2(X_in):
         X0_1[sample] = X_in[sample, 5: 5 + n_frames, :, :, :]
         X0_2[sample] = X_in[sample, 9: 9 + n_frames, :, :, :]
 
-        X1_0[sample] = X_in[sample, n_frames:n_frame
-        s + n_frames_out,:,:,:]
-        X1_1[sample] = X_in[sample, 5 + n_frames: 5 + n_frame
-        s + n_frames_out,:,:,:]
-        X1_2[sample] = X_in[sample, 9 + n_frames: 9 + n_frame
-        s + n_frames_out,:,:,:]
+        X1_0[sample] = X_in[sample, n_frames:n_frames + n_frames_out,:,:,:]
+        X1_1[sample] = X_in[sample, 5 + n_frames: 5 + n_frames + n_frames_out,:,:,:]
+        X1_2[sample] = X_in[sample, 9 + n_frames: 9 + n_frames + n_frames_out,:,:,:]
 
 
         for i in range(n_frames):
@@ -358,19 +363,13 @@ def fn_Xy_to_tframe_v2(X_in):
     X1_1 = np.clip(X1_1, 0, X_max)
     X1_2 = np.clip(X1_2, 0, X_max)
 
-    X0_0 = X0_
-    0 / X_max
-    X0_1 = X0_
-    1 / X_max
-    X0_2 = X0_
-    2 / X_max
+    X0_0 = X0_0 / X_max
+    X0_1 = X0_1 / X_max
+    X0_2 = X0_2 / X_max
 
-    X1_0 = X1_
-    0 / X_max
-    X1_1 = X1_
-    1 / X_max
-    X1_2 = X1_
-    2 / X_max
+    X1_0 = X1_0 / X_max
+    X1_1 = X1_1 / X_max
+    X1_2 = X1_2 / X_max
 
     ### combining all 3 arrays together
     X0 = np.copy(X0_0)
@@ -397,8 +396,8 @@ for i in range(0, 4):
     X0_t_val, X1_t_val = fn_Xy_to_tframe_v2(X_t_val)
 
     print('Shuffling')
-    X0_train, X1_train = shuffle(X0_train, X1_train, random_state=0)
-    X0_t_val, X1_t_val = shuffle(X0_t_val, X1_t_val, random_state=0)
+    X0_train, X1_train = np.random(X0_train, X1_train, random_state=0)
+    X0_t_val, X1_t_val = np.random(X0_t_val, X1_t_val, random_state=0)
 
     print('loading model')
     model = fn_get_model_convLSTM_tframe_5()
