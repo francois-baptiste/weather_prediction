@@ -1,73 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import numpy as np
-import tensorflow as tf
-from keras import backend as K
 from keras.layers import BatchNormalization, Conv2D
 from keras.layers.convolutional_recurrent import ConvLSTM2D
 from keras.models import Sequential
 from scipy.ndimage import filters
-
-from tools import fn_get_model_convLSTM_2, fn_run_model, fn_keras_rmse
-from tools import fn_h5_to_Xy_2D_timeD
-
-sess = tf.Session()
-K.set_session(sess)
-
-# setting a few global parameters that are used to scale the data
-y_std = 15.
-y_mean = 15.
-X_std = 50.
-X_mean = 60.
-my_height = 3
-
-# #### Evaluating the model
-#
-# To evaluate the model we created, we load back the weights of the model and then send the test data to the model and get rainfall prediction. From there we use the same RMSE metric as was used in the CIKM 2017 competition to evaluate the accuracy of the model created
-
-
-print('loading model')
-model = fn_get_model_convLSTM_2()
-
-### loading weights
-model.load_weights('model_convLSTM_2_train4000_val500.h5')
-
-### Loop to evaluate the model at each height for test set A
-testA = []
-with sess.as_default():
-    for i in range(4):
-        height_rem = [0, 1, 2, 3]
-        print(i)
-
-        t = height_rem[i]
-        X_test, y_test = fn_h5_to_Xy_2D_timeD(test_train="testA", i=0, h_select=my_height)
-        y_pred = model.predict(X_test)
-        testA.append(fn_keras_rmse(y_test, y_pred).eval())
-    print(testA)
-
-
-# testA = [13.5037568326104, 13.569423492251511, 13.654292392613222, 13.208109666576338]
-#
-# mean RMSE for test A = 13.48389
-#
-# testB = [13.544123493977148, 13.478812867719338, 13.37080457808451, 13.08367986944559]
-#
-# mean RMSE for test B = 13.36935
-#
-# Overall RMSE for all the different all test data sets at all height is
-#
-# Overall RMSE = 13.43 (done by averaging all the 8 different RMSE)
-#
-# This score would be ranked in the top 20 for the CIKM 2017 competition!
-
-# #### Predicting the next Radar image
-#
-# As an aside to this project, one could use the same principle of convLSTM deep NN model to predict the next radar images after feeding the algorithm a sequence of images. This follows the same principle as the moving digit of MNIST challenge (http://www.cs.toronto.edu/~nitish/unsupervised_video/)
-#
-# Below is the model that we settle to use for this section of the project
-#
-
+import numpy as np
 
 def fn_get_model_convLSTM_tframe_5():
     model = Sequential()
@@ -172,6 +110,8 @@ def fn_Xy_to_tframe_v2(X_in):
             X1_1[sample, i, :, :, 0] = filters.gaussian_filter(X1_1[sample, i, :, :, 0], sigma=1.0)
             X1_2[sample, i, :, :, 0] = filters.gaussian_filter(X1_2[sample, i, :, :, 0], sigma=1.0)
 
+
+
     X_max = 3.0
     X0_0 = np.clip(X0_0, 0, X_max)  # clip
     X0_1 = np.clip(X0_1, 0, X_max)
@@ -196,60 +136,3 @@ def fn_Xy_to_tframe_v2(X_in):
     X1 = np.copy(X1_0)
     X1 = np.concatenate((X1, X1_1, X1_2), axis=1)
     return X0, X1
-
-
-# By using this method instead of having 4000 sequences (from the 4000 training samples) we get 12000 image sequences.
-# To properly randomise the input to the algorithm, sklearn shuffle is used.
-
-# The following code was run to train the algorithm at all the heights of the radar images
-
-
-for i in range(0, 4):
-    print('loading data')
-    my_height = i
-    X_train, y_train = fn_h5_to_Xy_2D_timeD(test_train="train", i=0, h_select=my_height)
-    X_t_val, y_t_val = fn_h5_to_Xy_2D_timeD(test_train="val", i=4, h_select=my_height)
-
-
-    X0_train, X1_train = fn_Xy_to_tframe(X_train)
-    X0_t_val, X1_t_val = fn_Xy_to_tframe(X_t_val)
-
-    # X0_train, X1_train = fn_Xy_to_tframe_v2(X_train)
-    # X0_t_val, X1_t_val = fn_Xy_to_tframe_v2(X_t_val)
-    #
-    # print('Shuffling')
-    # X0_train, X1_train = np.random(X0_train, X1_train, random_state=0)
-    # X0_t_val, X1_t_val = np.random(X0_t_val, X1_t_val, random_state=0)
-
-    print('loading model')
-    model = fn_get_model_convLSTM_tframe_5()
-
-    print(model.summary())
-    # model.compile(loss='binary_crossentropy', optimizer='adam')
-    # model.compile(loss='mean_squared_error', optimizer='adam')
-    model.compile(loss=fn_keras_rmse, optimizer='adam')
-
-    print('Training model')
-    fn_run_model(model, X0_train, X1_train[:, 0, :, :, :], X0_t_val, X1_t_val[:, 0, :, :, :], batch_size=10, nb_epoch=3
-                 , verbose=1, is_graph=True)
-    model.save_weights("model_convLSTM_tframe5_train4000_val500_height " + str(i) + "gauss_1_mse.h5")
-
-# From the results we can create a little animation of the predicted motion of clouds. This is done using the code below
-
-
-
-input_frames = 5
-s_select = 0
-output_frames = 10
-X_input = X0_train[s_select, :input_frames, :, :, :]
-X_input1 = np.zeros((X_input.shape[0] + output_frames, X_input.shape[1], X_input.shape[2], X_input.shape[3]), float)
-X_input1[0:5] = X_input
-for i in range(0, output_frames):
-    print(i)
-    X_pred = model.predict(X_input1[i: i + 5, :, :, :].reshape(1, 5, 101, 101, 1))  # predict
-    X_input1[5 + i] = X_pred[0, :, :, :]
-
-np.save('X_input1.npy',X_input1)
-
-
-
