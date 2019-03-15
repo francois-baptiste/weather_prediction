@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
+from keras import backend as K
 from keras.layers import BatchNormalization, Conv2D
 from keras.layers.convolutional_recurrent import ConvLSTM2D
 from keras.models import Sequential
@@ -11,8 +12,6 @@ from scipy.ndimage import filters
 from tools import fn_get_model_convLSTM_2, fn_run_model, fn_keras_rmse
 from tools import fn_h5_to_Xy_2D_timeD
 
-from keras import backend as K
-import tensorflow as tf
 sess = tf.Session()
 K.set_session(sess)
 
@@ -211,12 +210,16 @@ for i in range(0, 4):
     X_train, y_train = fn_h5_to_Xy_2D_timeD(test_train="train", i=0, h_select=my_height)
     X_t_val, y_t_val = fn_h5_to_Xy_2D_timeD(test_train="val", i=4, h_select=my_height)
 
-    X0_train, X1_train = fn_Xy_to_tframe_v2(X_train)
-    X0_t_val, X1_t_val = fn_Xy_to_tframe_v2(X_t_val)
 
-    print('Shuffling')
-    X0_train, X1_train = np.random(X0_train, X1_train, random_state=0)
-    X0_t_val, X1_t_val = np.random(X0_t_val, X1_t_val, random_state=0)
+    X0_train, X1_train = fn_Xy_to_tframe(X_train)
+    X0_t_val, X1_t_val = fn_Xy_to_tframe(X_t_val)
+
+    # X0_train, X1_train = fn_Xy_to_tframe_v2(X_train)
+    # X0_t_val, X1_t_val = fn_Xy_to_tframe_v2(X_t_val)
+    #
+    # print('Shuffling')
+    # X0_train, X1_train = np.random(X0_train, X1_train, random_state=0)
+    # X0_t_val, X1_t_val = np.random(X0_t_val, X1_t_val, random_state=0)
 
     print('loading model')
     model = fn_get_model_convLSTM_tframe_5()
@@ -234,7 +237,6 @@ for i in range(0, 4):
 # From the results we can create a little animation of the predicted motion of clouds. This is done using the code below
 
 
-import matplotlib.animation as animation
 
 input_frames = 5
 s_select = 0
@@ -247,14 +249,7 @@ for i in range(0, output_frames):
     X_pred = model.predict(X_input1[i: i + 5, :, :, :].reshape(1, 5, 101, 101, 1))  # predict
     X_input1[5 + i] = X_pred[0, :, :, :]
 
-fig = plt.figure()
-ims = [];
-title = []
-for i in range(10):
-    im = plt.imshow(X_input1[i, :, :, 0], animated=True)
-    title = plt.title('Frame %f' % (i))
-    ims.append([im, title])
-ani = animation.ArtistAnimation(fig, ims, interval=500, blit=True)
-ani.save("movie.gif", writer='imagemagick')
-plt.show()
+np.save('X_input1.npy',X_input1)
+
+
 

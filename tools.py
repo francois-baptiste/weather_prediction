@@ -4,12 +4,6 @@ import matplotlib.pyplot as plt
 # from h5 file to Xy - 2D + timeD, at one height
 # function to load images both for X and Y - used for next radar image prediction
 
-y_std = 15.
-y_mean = 15.
-X_std = 50.
-X_mean = 60.
-my_height = 3
-
 
 #### Data loader function - use to select which HDF5 file to read and load
 def fn_h5_to_np(test_train, i=0):
